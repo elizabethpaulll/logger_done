@@ -1,0 +1,21 @@
+Timestamp,Gesture,Gesture_Index,Participant_ID
+2025-06-24T22:21:40.995Z,Touch Dashboard,1,0
+2025-06-24T22:21:49.003Z,Bouncing Legs,2,0
+2025-06-24T22:21:57.012Z,Tensing Body,3,0
+2025-06-24T22:22:05.021Z,Contract Body,4,0
+2025-06-24T22:22:13.031Z,Clenching Hands,5,0
+2025-06-25T09:30:24.128Z,Touch Dashboard,1,0
+2025-06-25T09:30:32.130Z,Bouncing Legs,2,0
+2025-06-25T09:30:40.133Z,Tensing Body,3,0
+2025-06-25T09:33:07.636Z,Touch Dashboard,1,0
+2025-06-25T09:50:35.652Z,Clenching Fist,1,0
+2025-06-28T20:01:16.542Z,Clenching Fist,1,0
+2025-06-28T20:01:26.550Z,Clenching Fist,2,0
+2025-06-28T20:01:36.560Z,Contract Body,3,0
+2025-06-28T20:01:46.572Z,Clenching Fist,4,0
+2025-06-29T13:00:05.832Z,Clenching Fist,1,0
+2025-06-29T13:00:15.843Z,Clenching Fist,2,0
+2025-06-29T13:00:25.853Z,Contract Body,3,0
+2025-06-29T14:56:11.355Z,Tapping Finger,1,0
+2025-06-29T14:56:21.366Z,Tapping Finger,2,0
+2025-06-29T14:56:31.376Z,Resting Head on Hand,3,0

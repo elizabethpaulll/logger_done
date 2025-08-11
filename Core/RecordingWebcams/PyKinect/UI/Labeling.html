@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Azure Kinect Labeling</title>
+        <link rel="stylesheet" href="Style.css">
+        <script src="Functions.js"></script> 
+    </head>
+    <body onload="setPIDToScreen()">        
+        <img src="Images/mi-logo-de-normal.png" width="250">
+        <div class="ButtonDiv"> 
+            <table>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td><h1 id="PID_Field">  </h1></td>
+                </tr>
+                <tr>
+                    <td><h1>Label für </h1></td>
+                </tr>
+                <tr>
+                    <td><Button class="Label" onclick="newLabel(this)">Tapping Finger</Button></td>
+                    <td><Button class="Label" onclick="newLabel(this)">Rubbing Hands</Button></td>
+                    <td><Button class="Label" onclick="newLabel(this)">Biting Nails</Button></td>
+                    <td><Button class="Label" onclick="newLabel(this)">Tilting Head</Button></td>
+                    <td><Button class="Label" onclick="newLabel(this)">Contract Body</Button></td>
+                </tr>
+                <tr>
+                    <td><Button class="Label" onclick="newLabel(this)">Clenching Fist</Button></td>
+                    <td><Button class="Label" onclick="newLabel(this)">Clenching Hands</Button></td>
+                    <td><Button class="Label" onclick="newLabel(this)">Covering Body</Button></td>
+                    <td><Button class="Label" onclick="newLabel(this)">Covering Head</Button></td>
+                    <td><Button class="Label" onclick="newLabel(this)">Touching Neck</Button></td>
+                </tr>
+                <tr>
+                    <td><button class="Label" onclick="newLabel(this)">Sliding on Chair</button></td>
+                    <td><button class="Label" onclick="newLabel(this)">Streching Arms</button></td>
+                    <td><button class="Label" onclick="newLabel(this)">Tensing Body</button></td>
+                    <td><button class="Label" onclick="newLabel(this)">Shifting Body</button></td>
+                    <td><button class="Label" onclick="newLabel(this)">Grabbing Handle</button></td>
+                </tr>
+                <tr>
+                    <td><button class="Label" onclick="newLabel(this)">Pushing Break</button></td>
+                    <td><button class="Label" onclick="newLabel(this)">Touch Dashboard</button></td>
+                    <td><button class="Label" onclick="newLabel(this)">Touching Hand</button></td>
+                    <td><button class="Label" onclick="newLabel(this)">Bouncing Legs</button></td>
+                </tr>
+            </table>
+        </div>
+        <div class="ButtonDiv">
+            <button class="StopButton" id="stopButton" onclick="StopLabeling()" >Stop labeling <br/>(Start download of log file)</button>
+            <div class="Log">
+                <p id="log" overflow="hidden">Here are the latest logs for checking</p>
+            </div> 
+        </div>   
+        
+
+
+        <script> 
+            
+            
+        </script>
+    </body>
+</html>

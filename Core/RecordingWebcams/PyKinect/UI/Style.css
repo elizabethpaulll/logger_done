@@ -1,0 +1,141 @@
+body{
+    background-image: url('Images/BackgroundStreet.jpg');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+}
+
+
+h1 {
+    color: white;
+    font-family: sans-serif;
+}
+
+table{
+    
+    justify-content: center;
+    align-items: center;
+}
+
+button{
+    width: 250px;
+    height: 150px;
+    font-size: 30px;
+    border-radius: 10px;
+}
+
+.Label{
+    background-color: rgba(160, 160, 160, 0.8);
+}
+
+.LabelKlicked{
+    background-color: rgba(0, 255, 0, 0.8);
+}
+
+.Label:hover {
+    background-color: rgba(101, 101, 101, 0.8) !important;
+}
+
+.LabelKlicked:hover{
+    background-color: rgba(0, 106, 0, 0.8) !important;
+}
+
+
+
+.ButtonDiv{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.StopButton{
+    width: 400px;
+    height: 200px;
+    background-color: rgba(255, 0, 0, 0.8);
+}
+
+.StartButton {
+    width: 300px;
+    height: 150px;
+    background-color: rgba(0, 255, 0, 0.8);
+    align-self: center;
+}
+
+.Log{    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.655);
+    height: 200px;
+}
+
+#log{
+    font-size: 25px;
+    text-align: center;
+    color: white;
+    width: 500px;
+    max-height: 200px;
+    overflow: hidden;
+}
+
+.loadingInformation{
+    display:none;
+    justify-content: center;
+    align-items: center;
+}
+
+.InputsDIV {
+    padding-top: 200px;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+}
+
+.loader {
+    border: 16px solid #f3f3f3; /* Light grey */
+    border-top: 16px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    animation: spin 3s linear infinite;
+    margin:auto;
+}
+
+.infotext {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 30px;
+    color: white;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.655);
+    padding: 10px
+}
+
+.inputField {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 30px;
+    background-color: rgba(0, 0, 0, 0.655);
+    color: white;
+    text-align:center;
+    padding: 9px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+#PIDError {
+    display:none;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 30px;
+    color: white;
+    text-align: center;
+    background: rgba(250, 0, 0, 0.655);
+    padding: 10px
+}

@@ -1,0 +1,5 @@
+numpy
+pandas
+opencv-python
+pykinect_azure #see https://github.com/ibaiGorordo/pyKinectAzure for installation instructions
+ctypes
