@@ -602,6 +602,121 @@ class PostProcessor:
             print(f"  Format: x,y,z coordinates (e.g., '123.456,-78.901,234.567')")
             print(f"  Available for Azure Kinect cameras only")
     
+    def _create_training_csv(self, frame_data_list):
+        """
+        Create a training-ready CSV where each timestamp appears once with all camera frames aligned.
+        Each camera becomes a column showing the frame filename for that timestamp.
+        
+        Args:
+            frame_data_list: List of dictionaries containing frame information
+        """
+        if not frame_data_list:
+            print("No frame data to create training CSV")
+            return
+        
+        # Convert to DataFrame for easier manipulation
+        df = pd.DataFrame(frame_data_list)
+        
+        # Add participant ID column
+        df['participant_id'] = self.participant_id
+        
+        # Format timestamp for better readability
+        df['timestamp_formatted'] = df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S.%f').str[:-3]
+        
+        # Get unique timestamps and sort them chronologically
+        unique_timestamps = sorted(df['timestamp_formatted'].unique())
+        
+        # Create new training DataFrame
+        training_data = []
+        
+        for timestamp in unique_timestamps:
+            # Get all frames for this timestamp
+            timestamp_frames = df[df['timestamp_formatted'] == timestamp]
+            
+            # Start with basic info (use first row since timestamp should be same)
+            first_frame = timestamp_frames.iloc[0]
+            row_data = {
+                'timestamp': timestamp,
+                'participant_id': first_frame['participant_id'],
+                'gesture_label': first_frame['gesture_label']
+            }
+            
+            # Add camera columns - each camera gets its own column
+            for camera_id in self.cameras:
+                camera_frames = timestamp_frames[timestamp_frames['camera_id'] == str(camera_id)]
+                if not camera_frames.empty:
+                    # Get the frame filename for this camera at this timestamp
+                    frame_filename = camera_frames.iloc[0]['filename']
+                    # Create full file path
+                    full_path = os.path.join(self.frames_path, f"camera_{camera_id}", frame_filename)
+                    # Use forward slashes for cross-platform compatibility
+                    full_path = full_path.replace('\\', '/')
+                    row_data[f'camera_{camera_id}'] = full_path
+                else:
+                    # No frame for this camera at this timestamp
+                    row_data[f'camera_{camera_id}'] = ''
+            
+            # Add skeletal data columns (if available)
+            # Use the first available frame with skeletal data
+            skeletal_frames = timestamp_frames[timestamp_frames['camera_id'].str.startswith('azure_')]
+            if not skeletal_frames.empty:
+                skeletal_frame = skeletal_frames.iloc[0]
+                for col in df.columns:
+                    if col.startswith('skeletal_'):
+                        row_data[col] = skeletal_frame[col]
+            else:
+                # No skeletal data available for this timestamp
+                for col in df.columns:
+                    if col.startswith('skeletal_'):
+                        row_data[col] = ''
+            
+            training_data.append(row_data)
+        
+        # Convert to DataFrame
+        training_df = pd.DataFrame(training_data)
+        
+        # Organize columns logically
+        all_columns = list(training_df.columns)
+        
+        # Core columns
+        core_columns = ['timestamp', 'participant_id', 'gesture_label']
+        
+        # Camera columns
+        camera_columns = [col for col in all_columns if col.startswith('camera_')]
+        camera_columns.sort()  # Sort alphabetically
+        
+        # Skeletal columns
+        skeletal_columns = [col for col in all_columns if col.startswith('skeletal_')]
+        skeletal_columns.sort()  # Sort alphabetically
+        
+        # Final column order
+        columns_order = core_columns + camera_columns + skeletal_columns
+        training_df = training_df[columns_order]
+        
+        # Save training CSV
+        training_csv_path = os.path.join(self.frames_path, 'training_aligned.csv')
+        training_df.to_csv(training_csv_path, index=False)
+        
+        print(f"\nCreated training CSV with {len(training_df)} unique timestamps")
+        print(f"Training CSV saved to: {training_csv_path}")
+        print(f"CSV columns: {', '.join(columns_order)}")
+        
+        # Show sample of the training data
+        print("\nSample training data:")
+        print(training_df.head().to_string(index=False))
+        
+        # Show camera coverage statistics
+        print(f"\nCamera coverage statistics:")
+        for camera_id in self.cameras:
+            camera_col = f'camera_{camera_id}'
+            if camera_col in training_df.columns:
+                frames_count = training_df[camera_col].str.len() > 0
+                coverage = frames_count.sum()
+                total = len(training_df)
+                print(f"  Camera {camera_id}: {coverage}/{total} timestamps ({coverage/total*100:.1f}%)")
+        
+        return training_df
+    
     def extract_frames_from_segments(self):
         """
         Extract frames from all segmented videos at 30 FPS.
@@ -672,11 +787,14 @@ class PostProcessor:
         # Create CSV file with all frame data
         if all_frame_data:
             self._create_frame_timestamps_csv(all_frame_data)
+            # Also create training-ready CSV
+            self._create_training_csv(all_frame_data)
         
         print(f"\nFrame extraction complete!")
         print(f"Total frames extracted: {total_frames}")
         print(f"Frames saved to: {self.frames_path}")
         print(f"Frame timestamps CSV created at: {os.path.join(self.frames_path, 'frame_timestamps.csv')}")
+        print(f"Training CSV created at: {os.path.join(self.frames_path, 'training_aligned.csv')}")
         
         return total_frames
 
