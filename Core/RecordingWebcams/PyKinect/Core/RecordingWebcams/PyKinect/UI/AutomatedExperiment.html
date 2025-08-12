@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Automated Gesture Experiment</title>
+    <link rel="stylesheet" href="Style.css">
+    <style>
+        .gesture-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 30px 0;
+            min-height: 80px;
+        }
+        .timer {
+            font-size: 36px;
+            color: #e74c3c;
+            margin: 20px 0;
+        }
+        .phase-indicator {
+            font-size: 24px;
+            color: #7f8c8d;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            width: 80%;
+            height: 20px;
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            margin: 20px auto;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #3498db;
+            transition: width 0.5s ease;
+        }
+        .gesture-count {
+            font-size: 20px;
+            color: #95a5a6;
+            margin: 10px 0;
+        }
+        .complete-screen {
+            background-color: #2ecc71;
+            color: white;
+            padding: 100px;
+            text-align: center;
+        }
+        .break-screen {
+            background-color: #f39c12;
+            color: white;
+            padding: 100px;
+            text-align: center;
+        }
+        .break-timer {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 30px 0;
+        }
+        .start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: rgba(255,255,255,0.8);
+        }
+        .start-btn {
+            font-size: 32px;
+            padding: 20px 60px;
+            border-radius: 12px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            margin-top: 40px;
+            cursor: pointer;
+        }
+        .start-btn:hover {
+            background: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <div id="start-screen" class="start-screen" style="display: block;">
+            <h1>Welcome to the Gesture Experiment</h1>
+            <p>Press the button below when you are ready to start.</p>
+            <button class="start-btn" id="start-btn">Ready to Start</button>
+        </div>
+        <div id="experiment-screen" style="display: none; text-align: center;">
+            <h1>Perform This Gesture:</h1>
+            <div id="gesture-display" class="gesture-display"></div>
+            <div id="phase-indicator" class="phase-indicator"></div>
+            <div id="timer" class="timer"></div>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <div id="gesture-count" class="gesture-count"></div>
+        </div>
+        <div id="break-screen" class="break-screen" style="display: none;">
+            <h1 id="break-title">Break</h1>
+            <p id="break-info">Take a 2-minute break.</p>
+            <div id="break-timer" class="break-timer">2:00</div>
+            <p>Time remaining until next set begins...</p>
+        </div>
+        <div id="complete-screen" class="complete-screen" style="display: none;">
+            <h1>Session Complete!</h1>
+            <p>All gestures have been performed.</p>
+            <p>You can now close this window.</p>
+        </div>
+        <div id="thankyou-screen" class="complete-screen" style="display: none;">
+            <h1>Experiment is finished, thank you for your participation :)</h1>
+        </div>
+    </div>
+    <script src="AutomatedExperiment.js"></script>
+</body>
+</html> 

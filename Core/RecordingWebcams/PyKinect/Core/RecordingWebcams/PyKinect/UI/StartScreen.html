@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Azure Kinect Labeling</title>
+        <link rel="stylesheet" href="Style.css">
+        <script src="Functions.js"></script> 
+    </head>
+    <body>
+        <img src="Images/mi-logo-de-normal.png" width="250">
+        <div class="InputsDIV">
+            <label class="infotext">Participant ID:</label>
+            
+            <input class="inputField" type="text" name="PID" id="PID" placeholder="Add participant ID" />
+            <label id="PIDError">I need a PID, please ;) </label>
+        </div>
+        <div class="ButtonDiv">
+            <button class="StartButton" onclick="CheckPID()">Start Labeling</button>
+        </div>
+        <br /><br /><br /><br />
+        <div class="loadingInformation" id="LID">
+            <div class="loader"></div>
+            <p class="infotext">Waiting for camera start...</p>
+        </div>
+
+    </body>
+</html>
