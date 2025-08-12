@@ -307,7 +307,148 @@ class PostProcessor:
         print(f"Warning: Could not determine start time for segment {segment_name}, using current time")
         return datetime.now()
     
-    def _extract_frames_from_video(self, video_path, output_dir, segment_name, segment_start_time, frame_data_list):
+    def _get_gesture_label_for_frame(self, frame_timestamp):
+        """
+        Get the gesture label for a specific frame timestamp.
+        
+        Args:
+            frame_timestamp: Timestamp of the frame
+        
+        Returns:
+            str: Gesture label for the frame, or 'no_gesture' if no gesture at that time
+        """
+        # Find the gesture that was active at this frame's timestamp
+        for idx, row in self.gesture_labels.iterrows():
+            gesture_time = row['Timestamp']
+            gesture_name = row['Gesture']
+            
+            # Check if this frame falls within the gesture window
+            # We'll use a 15-second window starting from the gesture timestamp
+            gesture_start = gesture_time
+            gesture_end = gesture_time + timedelta(seconds=15)
+            
+            if gesture_start <= frame_timestamp <= gesture_end:
+                return gesture_name
+        
+        # If no gesture found, return 'no_gesture'
+        return 'no_gesture'
+    
+    def _load_azure_skeletal_data(self):
+        """
+        Load Azure Kinect skeletal tracking data from CSV file.
+        
+        Returns:
+            dict: Dictionary mapping timestamps to skeletal data
+        """
+        azure_csv_path = os.path.join(self.log_path, "webcam_azure_kinect.csv")
+        if not os.path.exists(azure_csv_path):
+            print(f"Warning: Azure Kinect CSV not found: {azure_csv_path}")
+            return {}
+        
+        skeletal_data = {}
+        
+        try:
+            with open(azure_csv_path, 'r') as f:
+                for line_num, line in enumerate(f):
+                    if line_num == 0:  # Skip header
+                        continue
+                    
+                    # Parse the line: timestamp, c_success, ir_success, d_success, [joint_data...]
+                    parts = line.strip().split(',')
+                    if len(parts) < 4:
+                        continue
+                    
+                    timestamp_str = parts[0]
+                    try:
+                        timestamp = pd.to_datetime(timestamp_str)
+                        # Convert to timezone-naive for consistency
+                        timestamp = timestamp.tz_localize(None)
+                    except:
+                        continue
+                    
+                    # Parse joint data (each joint has x,y,z,confidence in format [x y z confidence])
+                    joint_data = {}
+                    joint_names = [
+                        'neck', 'nose', 'pelvis', 'wrist-left', 'wrist-right', 'elbow-left', 'elbow-right',
+                        'thumb-left', 'thumb-right', 'ear-left', 'ear-right', 'head', 'clavicle-left', 'clavicle-right',
+                        'eye-left', 'eye-right', 'hand-left', 'hand-right', 'handtip-left', 'handtip-right',
+                        'foot-left', 'foot-right', 'ankle-right', 'ankle-left', 'hip-left', 'hip-right',
+                        'shoulder-left', 'shoulder-right', 'spine-chest', 'spine-navel', 'knee-left', 'knee-right'
+                    ]
+                    
+                    # Start from index 4 (after timestamp and boolean flags)
+                    joint_start_idx = 4
+                    for i, joint_name in enumerate(joint_names):
+                        if joint_start_idx + i < len(parts):
+                            try:
+                                # Extract the joint data string: [x y z confidence]
+                                joint_str = parts[joint_start_idx + i].strip()
+                                
+                                # Remove brackets and split by spaces
+                                joint_str = joint_str.strip('[]')
+                                values = joint_str.split()
+                                
+                                if len(values) >= 3:
+                                    x = float(values[0])
+                                    y = float(values[1])
+                                    z = float(values[2])
+                                    
+                                    joint_data[joint_name] = f"{x:.3f},{y:.3f},{z:.3f}"
+                                else:
+                                    joint_data[joint_name] = "0.000,0.000,0.000"
+                            except (ValueError, IndexError):
+                                joint_data[joint_name] = "0.000,0.000,0.000"  # Default if parsing fails
+                        else:
+                            joint_data[joint_name] = "0.000,0.000,0.000"  # Default if not enough data
+                    
+                    skeletal_data[timestamp] = joint_data
+            
+            print(f"Loaded skeletal data for {len(skeletal_data)} timestamps from Azure Kinect")
+            
+            # Debug: Show sample of parsed data
+            if skeletal_data:
+                sample_timestamp = list(skeletal_data.keys())[0]
+                sample_data = skeletal_data[sample_timestamp]
+                print(f"Sample skeletal data from {sample_timestamp}:")
+                for joint, coords in list(sample_data.items())[:5]:  # Show first 5 joints
+                    print(f"  {joint}: {coords}")
+            
+            return skeletal_data
+            
+        except Exception as e:
+            print(f"Error loading Azure Kinect skeletal data: {e}")
+            return {}
+    
+    def _get_skeletal_data_for_frame(self, frame_timestamp, skeletal_data):
+        """
+        Get skeletal data for a specific frame timestamp.
+        
+        Args:
+            frame_timestamp: Timestamp of the frame
+            skeletal_data: Dictionary of skeletal data by timestamp
+        
+        Returns:
+            dict: Skeletal data for the frame, or empty dict if not found
+        """
+        if not skeletal_data:
+            return {}
+        
+        # Find the closest timestamp within a reasonable window (e.g., 100ms)
+        closest_timestamp = None
+        min_time_diff = timedelta(milliseconds=100)
+        
+        for timestamp in skeletal_data.keys():
+            time_diff = abs(timestamp - frame_timestamp)
+            if time_diff < min_time_diff:
+                min_time_diff = time_diff
+                closest_timestamp = timestamp
+        
+        if closest_timestamp:
+            return skeletal_data[closest_timestamp]
+        
+        return {}
+    
+    def _extract_frames_from_video(self, video_path, output_dir, segment_name, segment_start_time, frame_data_list, skeletal_data=None):
         """
         Extract frames from a video segment at 30 FPS.
         
@@ -317,6 +458,7 @@ class PostProcessor:
             segment_name: Name of the segment for frame naming
             segment_start_time: Start timestamp of the segment
             frame_data_list: List to append frame data (filename, timestamp) for CSV
+            skeletal_data: Optional skeletal data for Azure Kinect cameras
         
         Returns:
             Number of frames extracted
@@ -354,6 +496,14 @@ class PostProcessor:
                 frame_time_offset = frames_extracted / self.frame_extraction_fps  # seconds from segment start
                 frame_timestamp = segment_start_time + timedelta(seconds=frame_time_offset)
                 
+                # Get gesture label for this frame
+                gesture_label = self._get_gesture_label_for_frame(frame_timestamp)
+                
+                # Get skeletal data for Azure Kinect cameras
+                frame_skeletal_data = {}
+                if skeletal_data:
+                    frame_skeletal_data = self._get_skeletal_data_for_frame(frame_timestamp, skeletal_data)
+                
                 # Create simple frame filename without timestamp
                 frame_filename = f"{segment_name}_frame_{frames_extracted:06d}.jpg"
                 frame_path = os.path.join(output_dir, frame_filename)
@@ -362,13 +512,21 @@ class PostProcessor:
                 cv2.imwrite(frame_path, frame)
                 
                 # Store frame data for CSV
-                frame_data_list.append({
+                frame_data = {
                     'filename': frame_filename,
                     'timestamp': frame_timestamp,
                     'segment': segment_name,
                     'frame_number': frames_extracted,
-                    'camera_id': os.path.basename(output_dir).replace('camera_', '')
-                })
+                    'camera_id': os.path.basename(output_dir).replace('camera_', ''),
+                    'gesture_label': gesture_label
+                }
+                
+                # Add skeletal data columns for Azure Kinect cameras
+                if frame_skeletal_data:
+                    for joint_name, coordinates in frame_skeletal_data.items():
+                        frame_data[f'skeletal_{joint_name}'] = coordinates
+                
+                frame_data_list.append(frame_data)
                 
                 frames_extracted += 1
             
@@ -401,8 +559,23 @@ class PostProcessor:
         # Format timestamp for better readability
         df['timestamp_formatted'] = df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S.%f').str[:-3]
         
-        # Reorder columns for better readability - only essential columns
-        columns_order = ['filename', 'participant_id', 'camera_id', 'timestamp_formatted']
+        # Get all columns and organize them logically
+        all_columns = list(df.columns)
+        
+        # Core columns (always present)
+        core_columns = ['filename', 'participant_id', 'camera_id', 'timestamp_formatted', 'gesture_label']
+        
+        # Other columns (segment, frame_number, timestamp)
+        other_columns = [col for col in all_columns if col not in core_columns and not col.startswith('skeletal_')]
+        
+        # Skeletal columns (if present) - put at the end
+        skeletal_columns = [col for col in all_columns if col.startswith('skeletal_')]
+        skeletal_columns.sort()  # Sort alphabetically
+        
+        # Final column order: core -> other -> skeletal
+        columns_order = core_columns + other_columns + skeletal_columns
+        
+        # Reorder DataFrame
         df = df[columns_order]
         
         # Save to CSV
@@ -415,6 +588,19 @@ class PostProcessor:
         # Show sample of the data
         print("\nSample frame data:")
         print(df.head().to_string(index=False))
+        
+        # Show gesture distribution
+        gesture_counts = df['gesture_label'].value_counts()
+        print(f"\nGesture distribution in frames:")
+        for gesture, count in gesture_counts.items():
+            print(f"  {gesture}: {count} frames")
+        
+        # Show skeletal data information
+        if skeletal_columns:
+            print(f"\nSkeletal tracking data included for {len(skeletal_columns)} body parts:")
+            print(f"  Body parts: {', '.join([col.replace('skeletal_', '') for col in skeletal_columns[:5]])}...")
+            print(f"  Format: x,y,z coordinates (e.g., '123.456,-78.901,234.567')")
+            print(f"  Available for Azure Kinect cameras only")
     
     def extract_frames_from_segments(self):
         """
@@ -428,6 +614,9 @@ class PostProcessor:
         
         total_frames = 0
         all_frame_data = []  # Collect all frame data for CSV
+        
+        # Load Azure Kinect skeletal data if available
+        azure_skeletal_data = self._load_azure_skeletal_data()
         
         # Process each camera
         for camera_id in tqdm(self.cameras, desc="Extracting frames from cameras"):
@@ -453,6 +642,9 @@ class PostProcessor:
             
             print(f"Found {len(video_segments)} video segments for camera {camera_id}")
             
+            # Determine if this is an Azure Kinect camera
+            is_azure_camera = str(camera_id).startswith('azure_')
+            
             # Extract frames from each segment
             camera_total_frames = 0
             for video_segment in video_segments:
@@ -468,7 +660,8 @@ class PostProcessor:
                     camera_frames_dir, 
                     segment_name,
                     segment_start_time,
-                    all_frame_data
+                    all_frame_data,
+                    azure_skeletal_data if is_azure_camera else None
                 )
                 
                 camera_total_frames += frames_count
